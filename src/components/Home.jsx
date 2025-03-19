@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { FaPlus, FaTrash, FaSignOutAlt } from "react-icons/fa";
+import { auth, googleProvider } from "../firebase";
+import { signInWithPopup, signOut } from "firebase/auth";
 
 const Home = () => {
+  const [user, setUser] = useState(null);
   const [tasks, setTasks] = useState(() => {
     const savedTasks = localStorage.getItem("tasks");
     return savedTasks ? JSON.parse(savedTasks) : [];
@@ -20,6 +23,13 @@ const Home = () => {
   useEffect(() => {
     localStorage.setItem("tasks", JSON.stringify(tasks));
   }, [tasks]);
+
+  useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged((currentUser) => {
+      setUser(currentUser);
+    });
+    return () => unsubscribe();
+  }, []);
 
   const addTask = () => {
     if (newTask.title.trim()) {
@@ -52,19 +62,23 @@ const Home = () => {
     <div className="min-h-screen bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 text-white">
       {/* Hero Section */}
       <header className="p-6 flex justify-between items-center">
-        <h1 className="text-4xl font-bold tracking-wide">Task Tracker</h1>
+        <h1 className="text-4xl font-bold tracking-wide">
+          Jira-Style Task Manager
+        </h1>
         <button
-          onClick={() => setIsLoggedIn(!isLoggedIn)}
+          onClick={() =>
+            user ? signOut(auth) : signInWithPopup(auth, googleProvider)
+          }
           className="flex items-center gap-2 px-4 py-2 bg-white text-blue-600 rounded-full hover:bg-blue-100 transition-all"
         >
           <FaSignOutAlt />
-          {isLoggedIn ? "Logout" : "Login"}
+          {user ? "Logout" : "Login with Google"}
         </button>
       </header>
 
       {/* Main Content */}
       <main className="p-6">
-        {isLoggedIn ? (
+        {user ? (
           <>
             {/* Add Task and Shuffle Buttons */}
             <div className="flex justify-center gap-4 mb-8">
@@ -133,7 +147,7 @@ const Home = () => {
                             className="p-1 border rounded-lg text-sm text-white"
                           >
                             {progressOptions.map((option) => (
-                              <option key={option} value={option} >
+                              <option key={option} value={option}>
                                 {option}
                               </option>
                             ))}
@@ -217,16 +231,21 @@ const Home = () => {
             )}
           </>
         ) : (
-          <div className="text-center">
-            <h2 className="text-2xl font-semibold mb-4">
+          <div className="text-center flex-col items-center justify-center mt-20">
+            <h2 className="text-3xl font-semibold mb-4">
               Please log in to manage your tasks
             </h2>
-            <button
-              onClick={() => setIsLoggedIn(true)}
-              className="px-6 py-3 bg-blue-600 rounded-full hover:bg-blue-700 transition-all"
-            >
-              Login
-            </button>
+            <div>
+              <h3 className="text-xl font-semibold mb-4">
+                Sign In using Google👇
+              </h3>
+              <button
+                onClick={() => signInWithPopup(auth, googleProvider)}
+                className="px-6 py-3 bg-blue-600 rounded-full hover:bg-blue-700 transition-all"
+              >
+                Sign In
+              </button>
+            </div>
           </div>
         )}
       </main>
@@ -288,6 +307,14 @@ const Home = () => {
           </div>
         </div>
       )}
+      <footer>
+        <div className="items-center mt-12 p-10 mx-auto">
+          <h3 className="text-center">
+            Remember all your tasks are stored in LocalStorage. As this is just
+            Frontend Application
+          </h3>
+        </div>
+      </footer>
     </div>
   );
 };
